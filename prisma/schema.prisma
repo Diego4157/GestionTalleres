@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  RECEPTIONIST
+  MECHANIC
+}
+
+enum OrderStatus {
+  REGISTRADA
+  EN_DIAGNOSTICO
+  EN_REPARACION
+  EN_PRUEBAS
+  FINALIZADA
+  ENTREGADA
+}
+
+enum AppointmentStatus {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(RECEPTIONIST)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mechanicOrders Order[]       @relation("MechanicOrders")
+  appointments   Appointment[] @relation("MechanicAppointments")
+}
+
+model Client {
+  id             String   @id @default(uuid())
+  name           String
+  identification String   @unique
+  phone          String
+  email          String?  @unique
+  address        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  vehicles     Vehicle[]
+  orders       Order[]
+  appointments Appointment[]
+}
+
+model Vehicle {
+  id        String   @id @default(uuid())
+  plate     String   @unique
+  brand     String
+  model     String
+  year      Int
+  mileage   Int
+  vin       String?
+  clientId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client       Client        @relation(fields: [clientId], references: [id])
+  orders       Order[]
+  appointments Appointment[]
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  status     OrderStatus @default(REGISTRADA)
+  diagnosis  String?
+  laborCost  Float       @default(0)
+  totalCost  Float       @default(0)
+  fuelLevel  String?
+  checklist  Json?
+  clientId   String
+  vehicleId  String
+  mechanicId String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  client   Client      @relation(fields: [clientId], references: [id])
+  vehicle  Vehicle     @relation(fields: [vehicleId], references: [id])
+  mechanic User?       @relation("MechanicOrders", fields: [mechanicId], references: [id])
+  parts    OrderPart[]
+  invoice  Invoice?
+}
+
+model Inventory {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  description   String
+  currentStock  Int      @default(0)
+  minStock      Int      @default(0)
+  purchasePrice Float    @default(0)
+  salePrice     Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orderParts OrderPart[]
+}
+
+model OrderPart {
+  id        String @id @default(uuid())
+  orderId   String
+  partId    String
+  quantity  Int    @default(1)
+  unitPrice Float  @default(0)
+
+  order Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  part  Inventory @relation(fields: [partId], references: [id])
+}
+
+model Invoice {
+  id        String   @id @default(uuid())
+  orderId   String   @unique
+  subtotal  Float    @default(0)
+  tax       Float    @default(0)
+  total     Float    @default(0)
+  issueDate DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Appointment {
+  id         String            @id @default(uuid())
+  date       DateTime
+  status     AppointmentStatus @default(PENDIENTE)
+  clientId   String
+  vehicleId  String?
+  mechanicId String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  client   Client   @relation(fields: [clientId], references: [id])
+  vehicle  Vehicle? @relation(fields: [vehicleId], references: [id])
+  mechanic User?    @relation("MechanicAppointments", fields: [mechanicId], references: [id])
+}
