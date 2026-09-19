@@ -6,6 +6,7 @@ import { createInvoiceFromOrder } from "@/app/actions/invoice";
 import { OrderStatus } from "@prisma/client";
 import { generateOrderPDF } from "@/lib/pdf-generator";
 import Link from "next/link";
+import Swal from "sweetalert2";
 
 export default function OrderDetailManager({ order, inventory }: { order: any, inventory: any[] }) {
   const [loading, setLoading] = useState(false);
@@ -20,14 +21,33 @@ export default function OrderDetailManager({ order, inventory }: { order: any, i
   const handleStatusChange = async (newStatus: OrderStatus) => {
     setLoading(true);
     const res = await updateOrderStatus(order.id, newStatus);
-    if (res.success) setCurrentOrder({ ...currentOrder, status: newStatus });
+    if (res.success) {
+      setCurrentOrder({ ...currentOrder, status: newStatus });
+      Swal.fire({
+        title: '¡Estado actualizado!',
+        text: `El estado cambió a ${newStatus}`,
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+    } else {
+      Swal.fire('Error', 'No se pudo actualizar el estado', 'error');
+    }
     setLoading(false);
   };
 
   const handleSaveDetails = async () => {
     setLoading(true);
     const res = await updateOrderDetails(order.id, { diagnosis, laborCost });
-    if (res.success) window.location.reload();
+    if (res.success) {
+      Swal.fire({
+        title: '¡Guardado!',
+        text: 'Detalles de la orden guardados exitosamente',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      }).then(() => window.location.reload());
+    } else {
+      Swal.fire('Error', 'No se pudieron guardar los detalles', 'error');
+    }
     setLoading(false);
   };
 
@@ -35,15 +55,33 @@ export default function OrderDetailManager({ order, inventory }: { order: any, i
     if (!selectedPartId) return;
     setLoading(true);
     const res = await addPartToOrder(order.id, { partId: selectedPartId, quantity });
-    if (res.success) window.location.reload();
-    else { alert(res.error); setLoading(false); }
+    if (res.success) {
+      setIsPartsModalOpen(false);
+      Swal.fire({
+        title: '¡Repuesto agregado!',
+        text: 'El repuesto fue agregado a la orden',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      }).then(() => window.location.reload());
+    } else {
+      Swal.fire('Error', res.error || 'No se pudo agregar repuesto', 'error');
+      setLoading(false);
+    }
   };
 
   const handleGenerateInvoice = async () => {
     setLoading(true);
     const res = await createInvoiceFromOrder(order.id);
-    if (res.success) window.location.reload();
-    else alert(res.error);
+    if (res.success) {
+      Swal.fire({
+        title: '¡Factura generada!',
+        text: 'La factura ha sido creada exitosamente',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      }).then(() => window.location.reload());
+    } else {
+      Swal.fire('Error', res.error || 'No se pudo generar la factura', 'error');
+    }
     setLoading(false);
   };
 

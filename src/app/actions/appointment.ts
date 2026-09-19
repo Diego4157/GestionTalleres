@@ -46,3 +46,31 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
     return { success: false, error: "Error al actualizar cita." };
   }
 }
+
+export async function updateAppointment(id: string, data: { date: Date; clientId: string; vehicleId?: string; mechanicId?: string }) {
+  try {
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        date: data.date,
+        clientId: data.clientId,
+        vehicleId: data.vehicleId || null,
+        mechanicId: data.mechanicId || null,
+      },
+    });
+    revalidatePath("/dashboard/citas");
+    return { success: true, data: updated };
+  } catch (error) {
+    return { success: false, error: "Error al actualizar cita." };
+  }
+}
+
+export async function deleteAppointment(id: string) {
+  try {
+    await prisma.appointment.delete({ where: { id } });
+    revalidatePath("/dashboard/citas");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Error al eliminar cita." };
+  }
+}
