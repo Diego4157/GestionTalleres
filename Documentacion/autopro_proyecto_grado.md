@@ -28,4 +28,4 @@ El sistema gestiona las siguientes entidades principales:
 - **Facturas**: Documentación legal de servicios prestados.
 
 ---
-*Este documento es propiedad del proyecto de grado de Diego Muñoz.*
+*Este documento es propiedad del proyecto de grado de Diego Muñoz y Diego Toro.*
