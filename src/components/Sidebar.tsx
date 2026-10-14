@@ -4,18 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
+  const isMechanic = role === "MECHANIC";
+
+  const isAdmin = role === "ADMIN";
 
   const links = [
-    { href: "/dashboard", label: "Dashboard Administracion", icon: "📊" },
-    { href: "/dashboard/clientes", label: "Clientes", icon: "👥" },
-    { href: "/dashboard/vehiculos", label: "Vehículos", icon: "🚗" },
-    { href: "/dashboard/ordenes", label: "Órdenes de Servicio", icon: "📝" },
-    { href: "/dashboard/inventario", label: "Inventario", icon: "⚙️" },
-    { href: "/dashboard/citas", label: "Citas", icon: "📅" },
-    { href: "/dashboard/facturas", label: "Facturas", icon: "💰" },
-  ];
+    { href: "/dashboard", label: "Dashboard", icon: "📊", hidden: !isAdmin },
+    { href: "/dashboard/clientes", label: "Clientes", icon: "👥", hidden: isMechanic },
+    { href: "/dashboard/vehiculos", label: "Vehículos", icon: "🚗", hidden: false },
+    { href: "/dashboard/ordenes", label: "Órdenes de Servicio", icon: "📝", hidden: false },
+    { href: "/dashboard/inventario", label: "Inventario", icon: "⚙️", hidden: false },
+    { href: "/dashboard/citas", label: "Citas", icon: "📅", hidden: false },
+    { href: "/dashboard/facturas", label: "Facturas", icon: "💰", hidden: !isAdmin },
+    { href: "/dashboard/reportes", label: "Reportes", icon: "📈", hidden: !isAdmin },
+    { href: "/dashboard/usuarios", label: "Usuarios", icon: "🛡️", hidden: !isAdmin },
+  ].filter(l => !l.hidden);
 
   return (
     <aside style={{

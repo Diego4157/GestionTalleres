@@ -8,11 +8,11 @@ export default function VehiculosView({ initialVehicles, clients }: { initialVeh
   const [vehicles] = useState(initialVehicles);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ plate: "", brand: "", model: "", year: 2024, mileage: 0, vin: "", clientId: "" });
+  const [formData, setFormData] = useState({ plate: "", brand: "", model: "", year: 2024, mileage: 0, vin: "", clientId: "", tipo: "CARRO" });
 
   const openCreateModal = () => {
     setEditingId(null);
-    setFormData({ plate: "", brand: "", model: "", year: 2024, mileage: 0, vin: "", clientId: "" });
+    setFormData({ plate: "", brand: "", model: "", year: 2024, mileage: 0, vin: "", clientId: "", tipo: "CARRO" });
     setIsModalOpen(true);
   };
 
@@ -25,7 +25,8 @@ export default function VehiculosView({ initialVehicles, clients }: { initialVeh
       year: vehicle.year,
       mileage: vehicle.mileage,
       vin: vehicle.vin || "",
-      clientId: vehicle.clientId
+      clientId: vehicle.clientId,
+      tipo: vehicle.tipo || "CARRO"
     });
     setIsModalOpen(true);
   };
@@ -84,7 +85,10 @@ export default function VehiculosView({ initialVehicles, clients }: { initialVeh
             <tbody>
               {vehicles.map(v => (
                 <tr key={v.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <td style={{ padding: "1rem" }}>{v.plate}</td>
+                  <td style={{ padding: "1rem" }}>
+                    <span style={{ marginRight: "0.5rem" }}>{v.tipo === 'MOTO' ? '🏍️' : '🚗'}</span>
+                    {v.plate}
+                  </td>
                   <td style={{ padding: "1rem" }}>{v.brand} {v.model}</td>
                   <td style={{ padding: "1rem" }}>{v.client?.name}</td>
                   <td style={{ padding: "1rem" }}>
@@ -125,6 +129,13 @@ export default function VehiculosView({ initialVehicles, clients }: { initialVeh
             <div className="glass-panel" style={{ width: "450px", padding: "2rem", maxHeight: "90vh", overflowY: "auto" }}>
               <h2 className="h3">{editingId ? 'Editar Vehículo' : 'Nuevo Vehículo'}</h2>
               <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Tipo de Vehículo</label>
+                  <select className="form-input" required value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
+                    <option value="CARRO">Carro</option>
+                    <option value="MOTO">Moto</option>
+                  </select>
+                </div>
                 <div className="form-group">
                   <label className="form-label">Placa</label>
                   <input className="form-input" required value={formData.plate} onChange={e => setFormData({ ...formData, plate: e.target.value })} />

@@ -1,16 +1,20 @@
 "use client";
 
-export default function DashboardView({ statsData }: { statsData: any }) {
+import { MechanicPerformanceChart, RevenueTrendChart } from "@/app/dashboard/DashboardCharts";
+
+export default function DashboardView({ statsData, kpis, performance, trend }: { statsData: any, kpis: any, performance: any[], trend: any[] }) {
   const stats = [
+    { label: "Ingresos del Mes", value: `$${kpis.currentRevenue.toLocaleString()}`, color: "#10b981", subtitle: `${kpis.revenueGrowth >= 0 ? '+' : ''}${kpis.revenueGrowth.toFixed(1)}% vs anterior` },
     { label: "Órdenes Activas", value: statsData.activeOrders.toString(), color: "var(--accent-primary)" },
-    { label: "Clientes Registrados", value: statsData.totalClients.toString(), color: "var(--success)" },
-    { label: "Ingresos Totales", value: `$${statsData.totalSales.toLocaleString()}`, color: "#10b981" },
-    { label: "Alertas de Inventario", value: statsData.lowStockItems.toString(), color: "var(--danger)" },
+    { label: "Promedio Entrega", value: `${kpis.avgDeliveryHours} horas`, color: "#3b82f6" },
+    { label: "Repuesto Top", value: kpis.mostConsumedPartName, color: "#f59e0b" },
   ];
 
   return (
     <div className="animate-fade-in">
-      <h1 className="h2" style={{ marginBottom: "2rem" }}>Resumen Ejecutivo</h1>
+      <h1 className="h2" style={{ marginBottom: "2rem" }}>Panel Analítico Ejecutivo (BI)</h1>
+      
+      {/* KPIs Principales */}
       <div style={{ 
         display: "grid", 
         gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", 
@@ -21,36 +25,23 @@ export default function DashboardView({ statsData }: { statsData: any }) {
           <div key={i} className="glass-panel" style={{ padding: "1.5rem", borderTop: `4px solid ${stat.color}` }}>
             <h3 style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>{stat.label}</h3>
             <p style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)" }}>{stat.value}</p>
+            {stat.subtitle && <p style={{ fontSize: "0.75rem", color: kpis.revenueGrowth >= 0 ? "var(--success)" : "var(--danger)", marginTop: "0.5rem" }}>{stat.subtitle}</p>}
           </div>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "2rem" }}>
+        {/* Gráfico de Tendencia de Ingresos */}
         <div className="glass-panel" style={{ padding: "2rem" }}>
-          <h2 className="h3" style={{ marginBottom: "1rem" }}>Análisis de Negocio (BI)</h2>
-          <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Tendencias basadas en datos históricos.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div style={{ backgroundColor: "rgba(255,255,255,0.03)", padding: "1rem", borderRadius: "8px" }}>
-              <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>Servicio más solicitado</div>
-              <div style={{ fontWeight: 600 }}>Cambio de Aceite (Proyectado)</div>
-            </div>
-            <div style={{ backgroundColor: "rgba(255,255,255,0.03)", padding: "1rem", borderRadius: "8px" }}>
-              <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>Eficiencia Mecánica</div>
-              <div style={{ fontWeight: 600 }}>92% (Promedio de entrega)</div>
-            </div>
-          </div>
+          <h2 className="h3" style={{ marginBottom: "1rem" }}>Tendencia de Ingresos (Últimas 4 semanas)</h2>
+          <RevenueTrendChart data={trend} />
         </div>
+
+        {/* Rendimiento por Mecánico */}
         <div className="glass-panel" style={{ padding: "2rem" }}>
-          <h2 className="h3" style={{ marginBottom: "1rem" }}>Estado de Inventario</h2>
-          <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Predicción de reabastecimiento.</p>
-          {statsData.lowStockItems > 0 ? (
-            <div style={{ color: "var(--danger)", padding: "1rem", border: "1px solid var(--danger)", borderRadius: "8px", backgroundColor: "rgba(239, 68, 68, 0.05)" }}>
-              Hay <strong>{statsData.lowStockItems}</strong> productos por debajo del stock mínimo. Se recomienda realizar pedido.
-            </div>
-          ) : (
-            <div style={{ color: "var(--success)", padding: "1rem", border: "1px solid var(--success)", borderRadius: "8px", backgroundColor: "rgba(16, 185, 129, 0.05)" }}>
-              Todo el inventario está en niveles óptimos.
-            </div>
-          )}
+          <h2 className="h3" style={{ marginBottom: "1rem" }}>Rendimiento y Eficiencia Operativa por Mecánico</h2>
+          <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Total de órdenes finalizadas y su tiempo medio de resolución.</p>
+          <MechanicPerformanceChart data={performance} />
         </div>
       </div>
     </div>

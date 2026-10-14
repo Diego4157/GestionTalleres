@@ -2,8 +2,14 @@
 
 import { ClienteDAO } from "@/models/dao/ClienteDAO";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
+
+type ClientInput = { name: string; identification: string; phone: string; email: string; address: string; };
 
 export async function getClients() {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const clients = await ClienteDAO.getAll();
     return { success: true, data: clients };
@@ -12,7 +18,10 @@ export async function getClients() {
   }
 }
 
-export async function createClient(data: { name: string; identification: string; phone: string; email: string; address: string; }) {
+export async function createClient(data: ClientInput) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const newClient = await ClienteDAO.create({
       name: data.name,
@@ -30,6 +39,9 @@ export async function createClient(data: { name: string; identification: string;
 }
 
 export async function deleteClient(id: string) {
+  const guard = await requireRole(["ADMIN"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     await ClienteDAO.delete(id);
     revalidatePath("/dashboard/clientes");
@@ -39,7 +51,10 @@ export async function deleteClient(id: string) {
   }
 }
 
-export async function updateClient(id: string, data: { name: string; identification: string; phone: string; email: string; address: string; }) {
+export async function updateClient(id: string, data: ClientInput) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const updatedClient = await ClienteDAO.update(id, {
       name: data.name,

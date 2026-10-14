@@ -65,8 +65,21 @@ export default function InventoryManager({ initialInventory }: { initialInventor
     }
   };
 
+  const criticos = inventory.filter(i => i.ropStatus === "CRÍTICO");
+
   return (
     <div>
+      {criticos.length > 0 && (
+        <div style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", border: "1px solid var(--danger)", padding: "1.5rem", borderRadius: "8px", marginBottom: "2rem" }}>
+          <h3 style={{ color: "var(--danger)", marginBottom: "0.5rem" }}>⚠️ Alerta Crítica de Desabastecimiento</h3>
+          <p>Se recomienda solicitar pedido inmediato de <strong>{criticos.length}</strong> repuestos para evitar detener operaciones en el taller. Basado en el consumo reciente, estos repuestos están agotados o a punto de agotarse:</p>
+          <ul style={{ marginTop: "0.5rem", marginLeft: "1.5rem", listStyle: "circle" }}>
+            {criticos.map(c => (
+              <li key={c.id}><strong>{c.description}</strong> (Stock actual: {c.currentStock}, Mínimo: {c.minStock})</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
         <button className="btn btn-primary" onClick={openCreateModal}>+ Nuevo Producto</button>
       </div>
@@ -77,27 +90,44 @@ export default function InventoryManager({ initialInventory }: { initialInventor
               <th style={{ padding: "1rem" }}>Código</th>
               <th style={{ padding: "1rem" }}>Descripción</th>
               <th style={{ padding: "1rem" }}>Stock</th>
+              <th style={{ padding: "1rem" }}>Estado (ROP)</th>
               <th style={{ padding: "1rem" }}>Precio Venta</th>
               <th style={{ padding: "1rem" }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {inventory.map(item => (
-              <tr key={item.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                <td style={{ padding: "1rem" }}>{item.code}</td>
-                <td style={{ padding: "1rem" }}>{item.description}</td>
-                <td style={{ padding: "1rem", color: item.currentStock <= item.minStock ? "var(--danger)" : "var(--success)" }}>
-                  {item.currentStock} {item.currentStock <= item.minStock && "(Stock Bajo)"}
-                </td>
-                <td style={{ padding: "1rem" }}>${item.salePrice.toLocaleString()}</td>
-                <td style={{ padding: "1rem" }}>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button onClick={() => openEditModal(item)} className="btn btn-secondary">Editar</button>
-                    <button onClick={() => handleDelete(item.id)} className="btn btn-secondary" style={{ color: "var(--danger)" }}>Eliminar</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {inventory.map(item => {
+              let badgeColor = "var(--success)";
+              if (item.ropStatus === "CRÍTICO") badgeColor = "var(--danger)";
+              if (item.ropStatus === "ALERTA DE REORDEN") badgeColor = "#f59e0b"; // Amarillo/naranja
+
+              return (
+                <tr key={item.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <td style={{ padding: "1rem" }}>{item.code}</td>
+                  <td style={{ padding: "1rem" }}>{item.description}</td>
+                  <td style={{ padding: "1rem", fontWeight: "bold" }}>{item.currentStock}</td>
+                  <td style={{ padding: "1rem" }}>
+                    <span style={{ 
+                      padding: "0.25rem 0.75rem", 
+                      borderRadius: "9999px", 
+                      fontSize: "0.75rem", 
+                      fontWeight: 600, 
+                      backgroundColor: badgeColor,
+                      color: "#fff"
+                    }}>
+                      {item.ropStatus}
+                    </span>
+                  </td>
+                  <td style={{ padding: "1rem" }}>${item.salePrice.toLocaleString()}</td>
+                  <td style={{ padding: "1rem" }}>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button onClick={() => openEditModal(item)} className="btn btn-secondary">Editar</button>
+                      <button onClick={() => handleDelete(item.id)} className="btn btn-secondary" style={{ color: "var(--danger)" }}>Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

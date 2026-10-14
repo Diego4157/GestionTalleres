@@ -4,13 +4,17 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
   ADMIN
   RECEPTIONIST
   MECHANIC
+}
+
+enum TipoVehiculo {
+  CARRO
+  MOTO
 }
 
 enum OrderStatus {
@@ -20,6 +24,7 @@ enum OrderStatus {
   EN_PRUEBAS
   FINALIZADA
   ENTREGADA
+  FACTURADA
 }
 
 enum AppointmentStatus {
@@ -66,6 +71,7 @@ model Vehicle {
   year      Int
   mileage   Int
   vin       String?
+  tipo      TipoVehiculo @default(CARRO)
   clientId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -82,8 +88,9 @@ model Order {
   laborCost  Float       @default(0)
   totalCost  Float       @default(0)
   fuelLevel  String?
-  checklist  Json?
-  clientId   String
+  checklist    Json?
+  preDiagnosis Json?
+  clientId     String
   vehicleId  String
   mechanicId String?
   createdAt  DateTime    @default(now())
@@ -135,8 +142,10 @@ model Invoice {
 model Appointment {
   id         String            @id @default(uuid())
   date       DateTime
-  status     AppointmentStatus @default(PENDIENTE)
-  clientId   String
+  status       AppointmentStatus @default(PENDIENTE)
+  reason       String?
+  preDiagnosis Json?
+  clientId     String
   vehicleId  String?
   mechanicId String?
   createdAt  DateTime          @default(now())

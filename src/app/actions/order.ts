@@ -2,10 +2,18 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, Prisma } from "@prisma/client";
 import { sendWhatsAppNotification } from "@/lib/notifications";
+import { requireRole } from "@/lib/auth-guard";
+import { ReceptionChecklistValue } from "@/lib/reception";
+
+// Estados que el rol MECHANIC puede asignar.
+const MECHANIC_ALLOWED_STATUS: OrderStatus[] = ["EN_DIAGNOSTICO", "EN_REPARACION", "FINALIZADA"];
 
 export async function getOrders() {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -22,7 +30,10 @@ export async function getOrders() {
   }
 }
 
-export async function createOrder(data: { clientId: string; vehicleId: string; mechanicId?: string; fuelLevel: string; }) {
+export async function createOrder(data: { clientId: string; vehicleId: string; mechanicId?: string; fuelLevel: string; checklist?: ReceptionChecklistValue; }) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const newOrder = await prisma.order.create({
       data: {
@@ -30,6 +41,7 @@ export async function createOrder(data: { clientId: string; vehicleId: string; m
         vehicleId: data.vehicleId,
         mechanicId: data.mechanicId || null,
         fuelLevel: data.fuelLevel,
+        checklist: data.checklist ? (data.checklist as unknown as Prisma.InputJsonValue) : undefined,
         status: "REGISTRADA",
       },
     });
@@ -47,6 +59,12 @@ export async function createOrder(data: { clientId: string; vehicleId: string; m
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+  if (guard.role === "MECHANIC" && !MECHANIC_ALLOWED_STATUS.includes(status)) {
+    return { success: false, error: "Acceso denegado: el mecánico no puede asignar este estado." };
+  }
+
   try {
     const updatedOrder = await prisma.order.update({
       where: { id },
@@ -55,7 +73,11 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
     });
     
     if (updatedOrder.client) {
-      await sendWhatsAppNotification(updatedOrder.client.phone, `Tu vehículo (${updatedOrder.vehicle.plate}) ahora está en estado: ${status}`);
+      if (status === "FINALIZADA" || status === "ENTREGADA") {
+        await sendWhatsAppNotification(updatedOrder.client.phone, `Su vehículo ${updatedOrder.vehicle.plate} se encuentra listo para entrega en el taller`);
+      } else {
+        await sendWhatsAppNotification(updatedOrder.client.phone, `Tu vehículo (${updatedOrder.vehicle.plate}) ahora está en estado: ${status}`);
+      }
     }
 
     revalidatePath("/dashboard/ordenes");
@@ -67,21 +89,27 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
 }
 
 export async function updateOrderDetails(id: string, data: { diagnosis: string; laborCost: number; }) {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const currentOrder = await prisma.order.findUnique({
       where: { id },
       include: { parts: true }
     });
     if (!currentOrder) return { success: false, error: "Orden no encontrada." };
+    if (currentOrder.status === "FACTURADA") return { success: false, error: "No se puede modificar una orden ya facturada." };
 
+    // El mecánico no puede alterar la mano de obra (dato financiero).
+    const laborCost = guard.role === "MECHANIC" ? currentOrder.laborCost : Number(data.laborCost);
     const partsTotal = currentOrder.parts.reduce((sum, p) => sum + (p.unitPrice * p.quantity), 0);
-    const totalCost = partsTotal + Number(data.laborCost);
+    const totalCost = partsTotal + laborCost;
 
     const updated = await prisma.order.update({
       where: { id },
       data: {
         diagnosis: data.diagnosis,
-        laborCost: Number(data.laborCost),
+        laborCost,
         totalCost,
       }
     });
@@ -92,8 +120,38 @@ export async function updateOrderDetails(id: string, data: { diagnosis: string; 
   }
 }
 
-export async function addPartToOrder(orderId: string, data: { partId: string; quantity: number; }) {
+export async function updateOrderReception(id: string, data: { fuelLevel: string; checklist: ReceptionChecklistValue; }) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
+    const currentOrder = await prisma.order.findUnique({ where: { id } });
+    if (!currentOrder) return { success: false, error: "Orden no encontrada." };
+    if (currentOrder.status === "FACTURADA") return { success: false, error: "No se puede modificar una orden ya facturada." };
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        fuelLevel: data.fuelLevel,
+        checklist: data.checklist as unknown as Prisma.InputJsonValue,
+      }
+    });
+    revalidatePath(`/dashboard/ordenes/${id}`);
+    return { success: true, data: updated };
+  } catch (error) {
+    return { success: false, error: "Error al guardar la recepción del vehículo." };
+  }
+}
+
+export async function addPartToOrder(orderId: string, data: { partId: string; quantity: number; }) {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  try {
+    const orderCheck = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!orderCheck) return { success: false, error: "Orden no encontrada." };
+    if (orderCheck.status === "FACTURADA") return { success: false, error: "No se puede modificar una orden ya facturada." };
+
     const part = await prisma.inventory.findUnique({ where: { id: data.partId } });
     if (!part) return { success: false, error: "Repuesto no encontrado." };
     if (part.currentStock < data.quantity) return { success: false, error: "Stock insuficiente." };

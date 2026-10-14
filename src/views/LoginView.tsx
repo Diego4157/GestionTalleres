@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Swal from "sweetalert2";
 
 export default function LoginView() {
@@ -137,6 +138,25 @@ export default function LoginView() {
             >
               ¿Olvidaste tu contraseña?
             </button>
+          </div>
+
+          <div style={{ marginTop: "1.5rem", paddingTop: "1.25rem", borderTop: "1px solid var(--border-color)", textAlign: "center" }}>
+            <Link
+              href="/reservar"
+              className="btn btn-secondary"
+              style={{
+                width: "100%",
+                display: "inline-flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "0.5rem",
+                color: "#60a5fa",
+                borderColor: "rgba(59, 130, 246, 0.4)",
+                padding: "0.75rem",
+              }}
+            >
+              <span>🚗</span> ¿Eres cliente? Agenda tu cita y pre-diagnóstico aquí
+            </Link>
           </div>
         </form>
       </div>

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, Prisma } from "@prisma/client";
+import { ReceptionChecklistValue } from "@/lib/reception";
 
 export class OrdenDAO {
   static async getAll() {
@@ -21,8 +22,14 @@ export class OrdenDAO {
     });
   }
 
-  static async create(data: { clientId: string; vehicleId: string; mechanicId: string | null; fuelLevel: string; status: OrderStatus; }) {
-    return await prisma.order.create({ data });
+  static async create(data: { clientId: string; vehicleId: string; mechanicId: string | null; fuelLevel: string; checklist?: ReceptionChecklistValue; status: OrderStatus; }) {
+    const { checklist, ...rest } = data;
+    return await prisma.order.create({
+      data: {
+        ...rest,
+        checklist: checklist ? (checklist as unknown as Prisma.InputJsonValue) : undefined,
+      },
+    });
   }
 
   static async updateStatus(id: string, status: OrderStatus) {

@@ -2,8 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
 
 export async function getClients() {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const clients = await prisma.client.findMany({
       orderBy: { createdAt: "desc" },
@@ -18,6 +22,9 @@ export async function getClients() {
 }
 
 export async function createClient(data: { name: string; identification: string; phone: string; email: string; address: string; }) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const newClient = await prisma.client.create({
       data: {
@@ -37,6 +44,9 @@ export async function createClient(data: { name: string; identification: string;
 }
 
 export async function deleteClient(id: string) {
+  const guard = await requireRole(["ADMIN"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     await prisma.client.delete({ where: { id } });
     revalidatePath("/dashboard/clientes");

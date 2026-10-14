@@ -8,7 +8,7 @@ export class VehicleDAO {
     });
   }
 
-  static async create(data: { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; }) {
+  static async create(data: { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; tipo: any }) {
     return await prisma.vehicle.create({ data });
   }
 
@@ -16,7 +16,7 @@ export class VehicleDAO {
     return await prisma.vehicle.delete({ where: { id } });
   }
 
-  static async update(id: string, data: { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; }) {
+  static async update(id: string, data: { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; tipo: any }) {
     return await prisma.vehicle.update({ where: { id }, data });
   }
 }

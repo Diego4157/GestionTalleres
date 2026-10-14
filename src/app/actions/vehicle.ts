@@ -2,8 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
 
 export async function getVehicles() {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const vehicles = await prisma.vehicle.findMany({
       orderBy: { createdAt: "desc" },
@@ -19,6 +23,9 @@ export async function getVehicles() {
 }
 
 export async function createVehicle(data: { plate: string; brand: string; model: string; year: number; mileage: number; vin: string; clientId: string; }) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const newVehicle = await prisma.vehicle.create({
       data: {
@@ -44,6 +51,9 @@ export async function createVehicle(data: { plate: string; brand: string; model:
 }
 
 export async function deleteVehicle(id: string) {
+  const guard = await requireRole(["ADMIN"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     await prisma.vehicle.delete({ where: { id } });
     revalidatePath("/dashboard/vehiculos");

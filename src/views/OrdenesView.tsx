@@ -4,17 +4,21 @@ import { useState } from "react";
 import { createOrder } from "@/controllers/OrdenController";
 import Link from "next/link";
 import Swal from "sweetalert2";
+import ReceptionChecklist from "@/components/ReceptionChecklist";
+import { EMPTY_CHECKLIST, ReceptionChecklistValue } from "@/lib/reception";
 
 export default function OrdenesView({ initialOrders, clients, vehicles, mechanics }: { initialOrders: any[], clients: any[], vehicles: any[], mechanics: any[] }) {
   const [orders] = useState(initialOrders);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ clientId: "", vehicleId: "", mechanicId: "", fuelLevel: "1/4" });
+  const [checklist, setChecklist] = useState<ReceptionChecklistValue>({ ...EMPTY_CHECKLIST });
 
   const availableVehicles = vehicles.filter((v: any) => v.clientId === formData.clientId);
+  const selectedVehicle = vehicles.find((v: any) => v.id === formData.vehicleId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await createOrder(formData);
+    const res = await createOrder({ ...formData, checklist });
     if (res.success) {
       setIsModalOpen(false);
       Swal.fire({
@@ -77,7 +81,7 @@ export default function OrdenesView({ initialOrders, clients, vehicles, mechanic
 
         {isModalOpen && (
           <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-            <div className="glass-panel" style={{ width: "450px", padding: "2rem" }}>
+            <div className="glass-panel" style={{ width: "450px", padding: "2rem", maxHeight: "90vh", overflowY: "auto" }}>
               <h2 className="h3">Nueva Orden</h2>
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
@@ -94,6 +98,20 @@ export default function OrdenesView({ initialOrders, clients, vehicles, mechanic
                     {availableVehicles.map((v: any) => <option key={v.id} value={v.id}>{v.plate} - {v.brand}</option>)}
                   </select>
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Mecánico asignado (opcional)</label>
+                  <select className="form-input" value={formData.mechanicId} onChange={e => setFormData({...formData, mechanicId: e.target.value})}>
+                    <option value="">Sin asignar</option>
+                    {mechanics.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                </div>
+                <ReceptionChecklist
+                  fuelLevel={formData.fuelLevel}
+                  checklist={checklist}
+                  tipo={selectedVehicle?.tipo === "MOTO" ? "MOTO" : "CARRO"}
+                  onFuelChange={(fuelLevel) => setFormData({ ...formData, fuelLevel })}
+                  onChecklistChange={setChecklist}
+                />
                 <div style={{ display: "flex", gap: "1rem" }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancelar</button>
                   <button type="submit" className="btn btn-primary">Crear</button>

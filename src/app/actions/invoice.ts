@@ -2,8 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
 
 export async function getInvoices() {
+  const guard = await requireRole(["ADMIN"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const invoices = await prisma.invoice.findMany({
       orderBy: { issueDate: "desc" },
@@ -18,6 +22,9 @@ export async function getInvoices() {
 }
 
 export async function createInvoiceFromOrder(orderId: string) {
+  const guard = await requireRole(["ADMIN"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const existing = await prisma.invoice.findUnique({ where: { orderId } });
     if (existing) return { success: false, error: "Ya existe factura." };
@@ -32,8 +39,15 @@ export async function createInvoiceFromOrder(orderId: string) {
     const tax = subtotal * 0.19;
     const total = subtotal + tax;
 
-    const newInvoice = await prisma.invoice.create({
-      data: { orderId: order.id, subtotal, tax, total }
+    const newInvoice = await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.create({
+        data: { orderId: order.id, subtotal, tax, total }
+      });
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: "FACTURADA" }
+      });
+      return invoice;
     });
 
     revalidatePath("/dashboard/facturas");
@@ -44,29 +58,10 @@ export async function createInvoiceFromOrder(orderId: string) {
   }
 }
 
-export async function updateInvoice(id: string, data: { subtotal: number; tax: number; total: number }) {
-  try {
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: {
-        subtotal: data.subtotal,
-        tax: data.tax,
-        total: data.total
-      }
-    });
-    revalidatePath("/dashboard/facturas");
-    return { success: true, data: updated };
-  } catch (error) {
-    return { success: false, error: "Error al actualizar la factura." };
-  }
+export async function updateInvoice(id: string, data: any) {
+  return { success: false, error: "Una factura emitida es un documento fiscal inmutable y no puede ser alterada" };
 }
 
 export async function deleteInvoice(id: string) {
-  try {
-    await prisma.invoice.delete({ where: { id } });
-    revalidatePath("/dashboard/facturas");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Error al eliminar la factura." };
-  }
+  return { success: false, error: "Una factura emitida es un documento fiscal inmutable y no puede ser alterada" };
 }

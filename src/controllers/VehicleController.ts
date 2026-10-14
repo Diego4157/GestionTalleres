@@ -2,8 +2,14 @@
 
 import { VehicleDAO } from "@/models/dao/VehicleDAO";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
+
+type VehicleInput = { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; tipo: any };
 
 export async function getVehicles() {
+  const guard = await requireRole();
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const vehicles = await VehicleDAO.getAll();
     return { success: true, data: vehicles };
@@ -12,7 +18,10 @@ export async function getVehicles() {
   }
 }
 
-export async function createVehicle(data: { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; }) {
+export async function createVehicle(data: VehicleInput) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const newVehicle = await VehicleDAO.create(data);
     revalidatePath("/dashboard/vehiculos");
@@ -24,6 +33,9 @@ export async function createVehicle(data: { plate: string; brand: string; model:
 }
 
 export async function deleteVehicle(id: string) {
+  const guard = await requireRole(["ADMIN"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     await VehicleDAO.delete(id);
     revalidatePath("/dashboard/vehiculos");
@@ -33,7 +45,10 @@ export async function deleteVehicle(id: string) {
   }
 }
 
-export async function updateVehicle(id: string, data: { plate: string; brand: string; model: string; year: number; mileage: number; vin?: string | null; clientId: string; }) {
+export async function updateVehicle(id: string, data: VehicleInput) {
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  if (!guard.ok) return { success: false, error: guard.error };
+
   try {
     const updatedVehicle = await VehicleDAO.update(id, data);
     revalidatePath("/dashboard/vehiculos");
