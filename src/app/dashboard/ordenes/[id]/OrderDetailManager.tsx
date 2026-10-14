@@ -137,7 +137,7 @@ export default function OrderDetailManager({ order, inventory, role }: { order: 
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "2rem" }}>
+      <div className="responsive-grid-detail" style={{ display: "grid", gap: "2rem" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
           <DiagnosticAIAssistant
             orderId={order.id}
@@ -217,13 +217,13 @@ export default function OrderDetailManager({ order, inventory, role }: { order: 
               fuelLevel={fuelLevel}
               checklist={checklist}
               tipo={order.vehicle?.tipo === "MOTO" ? "MOTO" : "CARRO"}
-              disabled={isMechanic || currentOrder.status === "FACTURADA"}
+              disabled={currentOrder.status === "FACTURADA"}
               onFuelChange={setFuelLevel}
               onChecklistChange={setChecklist}
             />
-            {!isMechanic && currentOrder.status !== "FACTURADA" && (
-              <button className="btn btn-primary" onClick={handleSaveReception} disabled={loading} style={{ width: "100%" }}>
-                Guardar recepción
+            {currentOrder.status !== "FACTURADA" && (
+              <button className="btn btn-primary" onClick={handleSaveReception} disabled={loading} style={{ width: "100%", marginTop: "1rem" }}>
+                💾 Guardar recepción y fotos
               </button>
             )}
           </div>

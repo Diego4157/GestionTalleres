@@ -3,6 +3,7 @@ export interface ReceptionChecklistValue {
   herramientas: boolean;
   ruedaRepuesto: boolean;
   observaciones: string;
+  fotos?: string[];
 }
 
 export const FUEL_LEVELS = ["Reserva", "1/4", "1/2", "3/4", "Lleno"] as const;
@@ -12,6 +13,7 @@ export const EMPTY_CHECKLIST: ReceptionChecklistValue = {
   herramientas: false,
   ruedaRepuesto: false,
   observaciones: "",
+  fotos: [],
 };
 
 /** Normaliza el JSON persistido en Order.checklist a un valor tipado. */
@@ -23,5 +25,6 @@ export function parseChecklist(raw: unknown): ReceptionChecklistValue {
     herramientas: Boolean(r.herramientas),
     ruedaRepuesto: Boolean(r.ruedaRepuesto),
     observaciones: typeof r.observaciones === "string" ? r.observaciones : "",
+    fotos: Array.isArray(r.fotos) ? r.fotos.filter((f): f is string => typeof f === "string") : [],
   };
 }

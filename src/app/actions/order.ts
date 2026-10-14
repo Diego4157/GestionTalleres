@@ -121,7 +121,7 @@ export async function updateOrderDetails(id: string, data: { diagnosis: string; 
 }
 
 export async function updateOrderReception(id: string, data: { fuelLevel: string; checklist: ReceptionChecklistValue; }) {
-  const guard = await requireRole(["ADMIN", "RECEPTIONIST"]);
+  const guard = await requireRole(["ADMIN", "RECEPTIONIST", "MECHANIC"]);
   if (!guard.ok) return { success: false, error: guard.error };
 
   try {
